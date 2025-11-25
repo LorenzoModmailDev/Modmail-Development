@@ -882,7 +882,9 @@ class Modmail(commands.Cog):
         """Sets title for a thread"""
         await ctx.thread.set_title(name)
         sent_emoji, _ = await self.bot.retrieve_emoji()
-        await ctx.message.pin()
+        bot_perms = ctx.channel.permissions_for(ctx.guild.me)
+        if hasattr(bot_perms, "pin_messages") and bot_perms.pin_messages:
+            await ctx.message.pin()
         await self.bot.add_reaction(ctx.message, sent_emoji)
 
     @commands.command(usage="<users_or_roles...> [options]", cooldown_after_parsing=True)
@@ -1617,9 +1619,11 @@ class Modmail(commands.Cog):
         Useful for noting context.
         """
         ctx.message.content = msg
+        bot_perms = ctx.channel.permissions_for(ctx.guild.me)
         async with safe_typing(ctx):
             msg = await ctx.thread.note(ctx.message)
-            await msg.pin()
+            if hasattr(bot_perms, "pin_messages") and bot_perms.pin_messages:
+                await msg.pin()
         # Acknowledge and clean up the invoking command message
         sent_emoji, _ = await self.bot.retrieve_emoji()
         await self.bot.add_reaction(ctx.message, sent_emoji)
@@ -1636,9 +1640,11 @@ class Modmail(commands.Cog):
         Take a persistent note about the current user.
         """
         ctx.message.content = msg
+        bot_perms = ctx.channel.permissions_for(ctx.guild.me)
         async with safe_typing(ctx):
             msg = await ctx.thread.note(ctx.message, persistent=True)
-            await msg.pin()
+            if hasattr(bot_perms, "pin_messages") and bot_perms.pin_messages:
+                await msg.pin()
         await self.bot.api.create_note(recipient=ctx.thread.recipient, message=ctx.message, message_id=msg.id)
         # Acknowledge and clean up the invoking command message
         sent_emoji, _ = await self.bot.retrieve_emoji()

@@ -498,10 +498,14 @@ class Thread:
                 try:
                     info_embed = self._format_info_embed(user, log_url, log_count, self.bot.main_color)
                     msg = await channel.send(embed=info_embed)
-                    try:
-                        await msg.pin()
-                    except Exception as e:
-                        logger.warning("Failed to pin genesis message during unsnooze: %s", e)
+                    bot_perms = msg.channel.permissions_for(msg.guild.me)
+                    if hasattr(bot_perms, "pin_messages") and bot_perms.pin_messages:
+                        try:
+                            await msg.pin()
+                        except Exception as e:
+                            logger.warning("Failed to pin genesis message during unsnooze: %s", e)
+                    else:
+                        logger.warning("Failed to pin genesis message during unsnooze: Missing permissions")
                     self._genesis_message = msg
                     genesis_already_sent = True
                 except Exception:
@@ -844,7 +848,9 @@ class Thread:
             info_embed = self._format_info_embed(recipient, log_url, log_count, self.bot.main_color)
             try:
                 msg = await channel.send(mention, embed=info_embed)
-                self.bot.loop.create_task(msg.pin())
+                bot_perms = msg.channel.permissions_for(msg.guild.me)
+                if hasattr(bot_perms, "pin_messages") and bot_perms.pin_messages:
+                    self.bot.loop.create_task(msg.pin())
                 self._genesis_message = msg
                 # Option selection logging (if a thread-creation menu option was chosen prior to creation)
                 if getattr(self, "_selected_thread_creation_menu_option", None) and self.bot.config.get(
